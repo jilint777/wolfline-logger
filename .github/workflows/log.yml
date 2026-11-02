@@ -1,0 +1,42 @@
+name: Log Wolfline positions
+
+# A new run starts every 2 hours and lasts ~2h20m, so consecutive runs overlap
+# and cover GitHub's occasional late starts. Each run saves to its own file.
+on:
+  schedule:
+    - cron: "7 */2 * * *"
+  workflow_dispatch:
+    inputs:
+      chunks:
+        description: "Number of 28-minute chunks to log"
+        default: "5"
+      minutes:
+        description: "Minutes per chunk"
+        default: "28"
+
+permissions:
+  contents: write
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install gtfs-realtime-bindings
+      - name: Log and commit every 28 minutes
+        run: |
+          git config user.name "wolfline-logger"
+          git config user.email "actions@users.noreply.github.com"
+          for i in $(seq 1 "${{ inputs.chunks || 5 }}"); do
+            python logger.py --minutes "${{ inputs.minutes || 28 }}" --interval 30 --out data
+            git add data
+            git commit -q -m "data: $(TZ=America/New_York date '+%Y-%m-%d %H:%M')" || continue
+            for attempt in 1 2 3 4 5; do
+              git pull -q --rebase && git push -q && break
+              sleep $((attempt * 10))
+            done
+          done
