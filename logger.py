@@ -8,9 +8,11 @@ import argparse
 import csv
 import datetime
 import hashlib
+import io
 import os
 import time
 import urllib.request
+import zipfile
 from zoneinfo import ZoneInfo
 
 from google.transit import gtfs_realtime_pb2
@@ -38,7 +40,13 @@ def fetch(url, timeout=20):
 def save_schedule(out_dir):
     """Keep a copy of the static schedule; a new file only appears when its contents change."""
     data = fetch(SCHEDULE_URL, timeout=60)
-    digest = hashlib.sha256(data).hexdigest()[:12]
+    # Hash the files inside the zip, not the zip itself: the server rebuilds the zip
+    # with new timestamps on every download even when the schedule is unchanged.
+    h = hashlib.sha256()
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
+        for name in sorted(z.namelist()):
+            h.update(name.encode() + z.read(name))
+    digest = h.hexdigest()[:12]
     gtfs_dir = os.path.join(out_dir, "gtfs")
     os.makedirs(gtfs_dir, exist_ok=True)
     if not any(digest in f for f in os.listdir(gtfs_dir)):

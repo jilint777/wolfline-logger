@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   log:
@@ -28,10 +29,18 @@ jobs:
           python-version: "3.12"
       - run: pip install gtfs-realtime-bindings
       - name: Log and commit every 28 minutes
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "wolfline-logger"
           git config user.email "actions@users.noreply.github.com"
-          for i in $(seq 1 "${{ inputs.chunks || 5 }}"); do
+          chunks="${{ inputs.chunks || 5 }}"
+          for i in $(seq 1 "$chunks"); do
+            # GitHub's scheduler can skip runs, so each full run starts the next one
+            # before its last chunk; the overlap covers the new run's start-up time.
+            if [ "$i" = "$chunks" ] && [ "$chunks" -ge 5 ]; then
+              gh workflow run log.yml --ref main || echo "could not start next run"
+            fi
             python logger.py --minutes "${{ inputs.minutes || 28 }}" --interval 30 --out data
             git add data
             git commit -q -m "data: $(TZ=America/New_York date '+%Y-%m-%d %H:%M')" || continue
