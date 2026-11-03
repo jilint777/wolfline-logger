@@ -8,11 +8,13 @@ so no local computer needs to stay on.
 - `data/raw/<date>/run_<time>.csv`: one row per bus per poll (location, trip, route, next stop, crowding).
 - `data/gtfs/google_transit_<date>_<hash>.zip`: the scheduled timetable; a new copy appears only when it changes.
 
-Runs start every 2 hours and last about 2h20m, so they overlap; remove duplicate rows by
-`vehicle_id` + `vehicle_timestamp`. GitHub sometimes starts scheduled runs late, so expect a few short gaps.
+Each run lasts about 2h20m and starts the next one before it ends, so runs overlap; remove
+duplicate rows by `vehicle_id` + `vehicle_timestamp`. A watchdog checks every 15 minutes and
+restarts logging if the chain of runs ever stops.
 
 ## Stopping
-Actions tab → "Log Wolfline positions" → `...` → Disable workflow.
+Actions tab → "Watchdog" → `...` → Disable workflow, then do the same for "Log Wolfline positions"
+(disable the watchdog first, or it will restart the logger).
 
 ## Loading in R
 ```r

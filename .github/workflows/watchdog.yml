@@ -1,0 +1,29 @@
+name: Watchdog
+
+# Every 15 minutes, start the logger if no logger run is active. This only matters
+# if the chain of logger runs breaks; normally it finds a run and exits.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Start the logger if none is running
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          active=$(gh run list --workflow log.yml --limit 20 --json status \
+            --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length')
+          echo "active logger runs: $active"
+          if [ "$active" = "0" ]; then
+            gh workflow run log.yml --ref main
+            echo "started a new logger run"
+          fi
