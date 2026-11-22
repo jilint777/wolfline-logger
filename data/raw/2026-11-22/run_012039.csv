@@ -1,0 +1,2 @@
+poll_time_utc,poll_time_local,feed_timestamp,vehicle_id,vehicle_label,trip_id,route_id,latitude,longitude,bearing,speed,current_stop_sequence,stop_id,current_status,occupancy_status,vehicle_timestamp
+2026-11-22T06:20:39+00:00,2026-11-22T01:20:39-05:00,1795328439,13899,1716,1147571,5643,35.79133224487305,-78.73701477050781,6.459991455078125,0.002057777950540185,2,150182,IN_TRANSIT_TO,FEW_SEATS_AVAILABLE,1795328433
